@@ -1,147 +1,96 @@
 # Student Profile and Skill Development Management System
 
-A Spring Boot + MySQL REST API project demonstrating Java OOP, Java Collections,
-business logic, validation, and database CRUD operations.
+OOPJ (CS336B) MSE-II case study. Spring Boot 3.4.5 REST API with **JDBC (JdbcTemplate)** and **MySQL**.
 
-## Requirements
+## 1. Run it
 
-- JDK 17 or later
-- Maven (or use the Maven wrapper if you add one)
-- MySQL Server
-- IntelliJ IDEA, Eclipse, or VS Code
-- Postman (optional, for API testing)
+1. Install Java 17+ and MySQL 8.0.16+ (CHECK constraints need 8.0.16 or newer).
+2. Open `src/main/resources/application.properties` and put your MySQL password in
+   `spring.datasource.password` (or set the `DB_PASSWORD` environment variable).
+3. From this folder:
+   ```
+   mvn spring-boot:run
+   ```
+   The database `student_db` and both tables are created automatically.
+   (To create them by hand, run `database/create_database.sql` in MySQL Workbench.)
+4. Import `postman/Student-Management.postman_collection.json` into Postman and run folders 1 to 8 in order.
 
-## 1. Create the database
+If Maven fails with `HTTP Status: 429`, add a mirror in `C:\Users\<you>\.m2\settings.xml`
+or switch to a mobile hotspot.
 
-Open MySQL Workbench and run:
+## 2. Endpoints (base URL `http://localhost:8080`)
 
-```sql
-CREATE DATABASE student_db;
-```
+| # | Requirement | Method and URL | Success |
+|---|---|---|---|
+| 1 | Add a student | `POST /api/students` | 201 |
+| 2 | Retrieve all students | `GET /api/students` | 200 |
+| 3 | Search a student by ID | `GET /api/students/{id}` | 200 |
+| 4 | Update scores and skills | `PUT /api/students/{id}` | 200 |
+| 5 | Delete a student | `DELETE /api/students/{id}` | 200 |
+| 6 | Merit list | `GET /api/students/merit-list` | 200 |
+| extra | Search by email or course | `GET /api/students/search?email=...` or `?course=...` | 200 |
+| extra | Students with the same skills | `GET /api/students/same-skills` | 200 |
+| extra | Programming below 50, maths 75 or more | `GET /api/students/needs-programming-support` | 200 |
 
-Hibernate creates the `students` and `student_skills` tables automatically.
+Errors: `400` validation/bad input, `404` student not found, `409` duplicate ID or email.
 
-## 2. Configure your MySQL password
-
-Open:
-
-`src/main/resources/application.properties`
-
-Change:
-
-```properties
-spring.datasource.username=root
-spring.datasource.password=YOUR_MYSQL_PASSWORD
-```
-
-Use your actual MySQL username and password.
-
-## 3. Run the application
-
-Open this folder as a Maven project in your IDE.
-
-Run:
-
-`src/main/java/com/student/management/StudentManagementApplication.java`
-
-Or from a terminal in the project root:
-
-```bash
-mvn spring-boot:run
-```
-
-The application runs at:
-
-`http://localhost:8080`
-
-## 4. API endpoints
-
-| Method | URL | Purpose |
-|---|---|---|
-| POST | `/students` | Add a student |
-| GET | `/students` | Get all students |
-| GET | `/students/{id}` | Get student by ID |
-| PUT | `/students/{id}` | Update a student |
-| DELETE | `/students/{id}` | Delete a student |
-| GET | `/students/search/skill?skill=Java` | Search by skill |
-| GET | `/students/search/course?courseName=B.Tech%20CSIT` | Search by course |
-| GET | `/students/sort?order=asc` | Sort by average ascending |
-| GET | `/students/sort?order=desc` | Sort by average descending |
-| GET | `/students/{id}/average` | Calculate average |
-| POST | `/students/{id}/skills` | Add a skill |
-| GET | `/students/count` | Count students |
-
-## 5. Sample POST request
-
-Method: `POST`
-
-URL: `http://localhost:8080/students`
-
-Body -> raw -> JSON:
-
+Sample POST body:
 ```json
 {
-  "studentName": "Rahul Sharma",
-  "email": "rahul@gmail.com",
+  "studentId": 101,
+  "name": "Aarav Sharma",
+  "email": "aarav.sharma@kiet.edu",
   "courseName": "B.Tech CSIT",
-  "programmingScore": 90,
-  "mathematicsScore": 85,
-  "technicalSkills": ["Java", "Python", "SQL"]
+  "programmingScore": 92,
+  "mathematicsScore": 88,
+  "technicalSkills": ["Java", "MySQL", "Spring Boot"]
 }
 ```
 
-Do not send `studentId` when adding a student; MySQL generates it.
+## 3. Business rules and where they are
 
-## 6. Add a skill
+| Rule | Where |
+|---|---|
+| Average = (programming + maths) / 2, rounded to 2 decimals | `StudentService.average()` |
+| 85+ Excellent, 70-84.99 Good, 50-69.99 Satisfactory, below 50 Needs Improvement | `StudentService.category()` |
+| Stronger subject (`Both Equal` on a tie) | `StudentService.strongerSubject()` |
+| Merit list: average high to low, then programming score, then name | `MERIT_ORDER` comparator |
+| Same technical skills | `StudentService.getSameSkillGroups()` |
+| Programming below 50 and maths 75 or more | `getNeedsProgrammingSupport()` |
+| No duplicate IDs | `existsById()` check in the service, plus `PRIMARY KEY` in MySQL |
+| Scores between 0 and 100 | `@DecimalMin/@DecimalMax` on the model, plus `CHECK` in MySQL |
 
-Method: `POST`
+Assumptions: "needs improvement in programming" means a programming score below 50.
+"Same technical skills" is shown two ways (students sharing each skill, and students with an identical skill set).
 
-URL: `http://localhost:8080/students/1/skills`
+## 4. Collections used (for the viva)
 
-Body:
+| Collection | Where | Why |
+|---|---|---|
+| `List<String>` | `Student.technicalSkills` | ordered skills of one student, easy to loop |
+| `List<Student>` | repository and service results | a group of students, can be sorted |
+| `Map<Integer, List<String>>` (`HashMap`) | `StudentRepository.attachSkills()` | all skills loaded in one query, then matched to students by ID |
+| `Map<String, String>` (`LinkedHashMap`) | `StudentRepository.saveSkills()` | removes duplicate skills (Java / java) and keeps the order |
+| `Set<String>` (`TreeSet`) | `getSameSkillGroups()` | a student's skills without duplicates, sorted |
+| `Map<String, List<String>>` (`TreeMap`) | `getSameSkillGroups()` | skill -> students who have it, sorted by skill |
+| `Comparator<Student>` | `MERIT_ORDER` | defines the merit list order |
+| Streams (`filter`, `map`, `collect`) | service | filtering and converting lists |
 
-```json
-{
-  "skill": "Spring Boot"
-}
+## 5. Project structure
+
 ```
-
-## 7. Validation rules
-
-- Student name, email and course name cannot be blank.
-- Email must have a valid format.
-- Programming score must be between 0 and 100.
-- Mathematics score must be between 0 and 100.
-- Email must be unique.
-- A missing student ID returns HTTP 404.
-- Invalid request data returns HTTP 400.
-
-## Project package structure
-
-```text
-student-management/
-├── pom.xml
-├── README.md
-├── database/
-│   └── create_database.sql
-└── src/
-    └── main/
-        ├── java/com/student/management/
-        │   ├── StudentManagementApplication.java
-        │   ├── controller/StudentController.java
-        │   ├── entity/Student.java
-        │   ├── exception/GlobalExceptionHandler.java
-        │   ├── exception/ResourceNotFoundException.java
-        │   ├── repository/StudentRepository.java
-        │   └── service/StudentService.java
-        └── resources/
-            └── application.properties
+student-management
+|-- pom.xml
+|-- database/create_database.sql
+|-- postman/Student-Management.postman_collection.json
+`-- src/main
+    |-- java/com/student/management
+    |   |-- StudentManagementApplication.java
+    |   |-- model/Student.java
+    |   |-- dto/            StudentUpdateRequest, StudentResponse, MeritListEntry
+    |   |-- repository/StudentRepository.java      (JdbcTemplate + SQL)
+    |   |-- service/StudentService.java            (business rules)
+    |   |-- controller/StudentController.java      (REST endpoints)
+    |   `-- exception/      not-found, duplicate, global handler
+    `-- resources/          application.properties, schema.sql
 ```
-
-## Notes
-
-- `Student` is a JPA entity. `@ElementCollection` stores skills in a separate table.
-- `StudentRepository` uses Spring Data JPA.
-- `StudentService` contains business logic and Java Collections sorting.
-- `StudentController` exposes REST endpoints.
-- `GlobalExceptionHandler` returns readable error responses.
