@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "Student Management API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "Add Student",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentName\": \"Rahul Sharma\",\n  \"email\": \"rahul@gmail.com\",\n  \"courseName\": \"B.Tech CSIT\",\n  \"programmingScore\": 90,\n  \"mathematicsScore\": 85,\n  \"technicalSkills\": [\n    \"Java\",\n    \"Python\",\n    \"SQL\"\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/students"
+      }
+    },
+    {
+      "name": "Get All Students",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/students"
+      }
+    },
+    {
+      "name": "Get Student 1",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/students/1"
+      }
+    },
+    {
+      "name": "Update Student 1",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentName\": \"Rahul Sharma\",\n  \"email\": \"rahul@gmail.com\",\n  \"courseName\": \"B.Tech CSIT\",\n  \"programmingScore\": 95,\n  \"mathematicsScore\": 90,\n  \"technicalSkills\": [\n    \"Java\",\n    \"Python\",\n    \"SQL\",\n    \"Spring Boot\"\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/students/1"
+      }
+    },
+    {
+      "name": "Search Java Skill",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/students/search/skill?skill=Java"
+      }
+    },
+    {
+      "name": "Sort by Average Descending",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/students/sort?order=desc"
+      }
+    },
+    {
+      "name": "Calculate Average for Student 1",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/students/1/average"
+      }
+    },
+    {
+      "name": "Add Skill to Student 1",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"skill\": \"Spring Boot\"\n}"
+        },
+        "url": "{{baseUrl}}/students/1/skills"
+      }
+    },
+    {
+      "name": "Count Students",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/students/count"
+      }
+    },
+    {
+      "name": "Delete Student 1",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/students/1"
+      }
+    }
+  ]
+}
